@@ -20,9 +20,21 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Builder Service APIs", Version = "v1" });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddStatusService();
 
 var app = builder.Build();
+
+app.UseCors();
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>
