@@ -32,3 +32,6 @@ x86/
 *.log
 *.swp
 *~
+
+# Claude Code
+.claude/
