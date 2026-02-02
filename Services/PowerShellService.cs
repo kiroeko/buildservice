@@ -8,6 +8,7 @@ namespace BuilderService
     {
         private readonly int _maxTasks;
         private readonly TimeSpan _taskExpiry;
+        private readonly TimeSpan _taskTimeout;
         private readonly ConcurrentDictionary<string, PowerShellTask> _tasks = new();
         private readonly Channel<PowerShellTask> _queue = Channel.CreateUnbounded<PowerShellTask>();
 
@@ -15,7 +16,10 @@ namespace BuilderService
         {
             _maxTasks = configuration.GetValue("PowerShellService:MaxTasks", 100);
             _taskExpiry = TimeSpan.FromMinutes(configuration.GetValue("PowerShellService:TaskExpiryMinutes", 60));
+            _taskTimeout = TimeSpan.FromMinutes(configuration.GetValue("PowerShellService:TaskTimeoutMinutes", 30));
         }
+
+        public bool IsFull => _tasks.Count >= _maxTasks;
 
         public string Submit(string scriptPath)
         {
@@ -64,10 +68,22 @@ namespace BuilderService
 
                 process.Start();
 
-                var outputTask = process.StandardOutput.ReadToEndAsync();
-                var errorTask = process.StandardError.ReadToEndAsync();
+                using var cts = new CancellationTokenSource(_taskTimeout);
 
-                await process.WaitForExitAsync();
+                var outputTask = process.StandardOutput.ReadToEndAsync(cts.Token);
+                var errorTask = process.StandardError.ReadToEndAsync(cts.Token);
+
+                try
+                {
+                    await process.WaitForExitAsync(cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    process.Kill(entireProcessTree: true);
+                    task.Error = $"Process timed out after {_taskTimeout.TotalMinutes} minutes and was killed";
+                    task.Status = PowerShellTaskStatus.TimedOut;
+                    return;
+                }
 
                 task.Output = await outputTask;
                 task.Error = await errorTask;

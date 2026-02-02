@@ -5,7 +5,8 @@ namespace BuilderService
         Pending,
         Running,
         Completed,
-        Failed
+        Failed,
+        TimedOut
     }
 
     public class PowerShellTask

@@ -15,8 +15,16 @@ namespace BuilderService
             if (!request.ScriptPath.EndsWith(".ps1", StringComparison.OrdinalIgnoreCase))
                 return new ApiResult<string> { Code = 400, Data = string.Empty, Message = "Only .ps1 files are allowed" };
 
+            // Block characters that could be used for command injection
+            char[] forbiddenChars = ['"', '\'', '`', '$', '&', '|', ';', '<', '>', '(', ')', '{', '}', '\n', '\r'];
+            if (request.ScriptPath.IndexOfAny(forbiddenChars) >= 0)
+                return new ApiResult<string> { Code = 400, Data = string.Empty, Message = "ScriptPath contains forbidden characters: \" ' ` $ & | ; < > ( ) { }" };
+
             if (!System.IO.File.Exists(request.ScriptPath))
                 return new ApiResult<string> { Code = 404, Data = string.Empty, Message = "Script file not found" };
+
+            if (service.IsFull)
+                return new ApiResult<string> { Code = 429, Data = string.Empty, Message = "Task queue is full, please try again later" };
 
             var taskId = service.Submit(request.ScriptPath);
             return ApiResult(taskId);

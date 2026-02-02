@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace BuilderService
 {
     [Route("api/[controller]")]
     [ApiController]
+    [DisableRateLimiting]
     public class StatusController : Controller
     {
         [HttpGet]
