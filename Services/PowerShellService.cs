@@ -13,8 +13,8 @@ namespace BuilderService
 
         public PowerShellService(IConfiguration configuration)
         {
-            _maxTasks = configuration.GetValue("PowerShellService:_maxTasks", 100);
-            _taskExpiry = TimeSpan.FromMinutes(configuration.GetValue("PowerShellService:_taskExpiryMinutes", 60));
+            _maxTasks = configuration.GetValue("PowerShellService:MaxTasks", 100);
+            _taskExpiry = TimeSpan.FromMinutes(configuration.GetValue("PowerShellService:TaskExpiryMinutes", 60));
         }
 
         public string Submit(string scriptPath)
