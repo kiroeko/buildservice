@@ -31,11 +31,11 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddStatusService();
+builder.Services.AddPowerShellService();
 
 var app = builder.Build();
 
 app.UseCors();
-
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
