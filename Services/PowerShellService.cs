@@ -63,7 +63,8 @@ namespace BuilderService
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetDirectoryName(task.ScriptPath) ?? ""
                 };
 
                 process.Start();
