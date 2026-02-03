@@ -1,0 +1,59 @@
+pipeline {
+    agent {
+        label 'built-in'
+    }
+
+    environment {
+        API_BASE = 'http://192.168.110.112:22333/api/PowerShell'
+    }
+
+    stages {
+        stage('Submit Script') {
+            steps {
+                script {
+                    def response = httpRequest(
+                        url: "${API_BASE}/run",
+                        httpMode: 'POST',
+                        contentType: 'APPLICATION_JSON',
+                        requestBody: '{"scriptPath":"C:\\\\sync.ps1"}',
+                        validResponseCodes: '200'
+                    )
+                    def json = readJSON text: response.content
+                    if (json.code != 200) {
+                        error "Submit failed: ${json.message}"
+                    }
+                    env.TASK_ID = json.data
+                    echo "Task submitted, ID: ${env.TASK_ID}"
+                }
+            }
+        }
+
+        stage('Wait for Completion') {
+            steps {
+                script {
+                    def maxRetries = 60
+                    def interval = 5
+                    for (int i = 0; i < maxRetries; i++) {
+                        sleep interval
+                        def resp = httpRequest(
+                            url: "${API_BASE}/${env.TASK_ID}",
+                            httpMode: 'GET',
+                            validResponseCodes: '200'
+                        )
+                        def result = readJSON text: resp.content
+                        def status = result.data?.status
+                        echo "Poll #${i + 1}: status = ${status}"
+
+                        if (status == 'Completed') {
+                            echo "Output:\n${result.data?.output}"
+                            return
+                        } else if (status == 'Failed') {
+                            error "Script failed:\n${result.data?.output}"
+                        }
+                    }
+                    error "Timeout waiting for task ${env.TASK_ID}"
+                }
+            }
+        }
+    }
+}
