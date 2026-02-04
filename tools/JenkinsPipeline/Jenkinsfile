@@ -15,7 +15,7 @@ pipeline {
                         url: "${API_BASE}/run",
                         httpMode: 'POST',
                         contentType: 'APPLICATION_JSON',
-                        requestBody: '{"scriptPath":"C:\\\\sync.ps1"}',
+                        requestBody: '{"scriptPath":"C:\\\\tools\\\\gitsync\\\\sync\\\\sync.ps1"}',
                         validResponseCodes: '200'
                     )
                     def json = readJSON text: response.content
@@ -33,6 +33,8 @@ pipeline {
                 script {
                     def maxRetries = 60
                     def interval = 5
+                    def lastOutputLen = 0
+                    def lastErrorLen = 0
                     for (int i = 0; i < maxRetries; i++) {
                         sleep interval
                         def resp = httpRequest(
@@ -42,13 +44,23 @@ pipeline {
                         )
                         def result = readJSON text: resp.content
                         def status = result.data?.status
-                        echo "Poll #${i + 1}: status = ${status}"
+                        def output = result.data?.output ?: ''
+                        def errMsg = result.data?.error ?: ''
+
+                        // Print incremental output
+                        if (output.length() > lastOutputLen) {
+                            echo output.substring(lastOutputLen)
+                            lastOutputLen = output.length()
+                        }
+                        if (errMsg.length() > lastErrorLen) {
+                            echo "[STDERR] ${errMsg.substring(lastErrorLen)}"
+                            lastErrorLen = errMsg.length()
+                        }
 
                         if (status == 'Completed') {
-                            echo "Output:\n${result.data?.output}"
                             return
-                        } else if (status == 'Failed') {
-                            error "Script failed:\n${result.data?.output}"
+                        } else if (status == 'Failed' || status == 'TimedOut' || status == 'Cancelled') {
+                            error "Task ${status}"
                         }
                     }
                     error "Timeout waiting for task ${env.TASK_ID}"
