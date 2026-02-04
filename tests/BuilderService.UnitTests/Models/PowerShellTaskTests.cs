@@ -302,6 +302,96 @@ public class PowerShellTaskTests
     }
 
     [Fact]
+    public void PersistOutput_InvalidPath_ReturnsFalse()
+    {
+        var task = new PowerShellTask();
+        task.AppendOutput("data");
+
+        var success = task.PersistOutput("Z:\\nonexistent\\deeply\\nested\\invalid");
+
+        success.Should().BeFalse();
+        task.OutputPersisted.Should().BeFalse();
+        task.OutputFilePath.Should().BeNull();
+        task.ErrorFilePath.Should().BeNull();
+
+        // StringBuilder should still be intact
+        var result = task.GetOutputSince();
+        result.Output.Should().Contain("data");
+    }
+
+    [Fact]
+    public void GetOutputSince_AfterPersist_FileDeleted_ReturnsEmpty()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"ps-test-{Guid.NewGuid():N}");
+        try
+        {
+            var task = new PowerShellTask();
+            task.AppendOutput("content");
+            task.AppendError("err");
+            task.PersistOutput(dir);
+
+            // Manually delete files to simulate external deletion
+            File.Delete(task.OutputFilePath!);
+            File.Delete(task.ErrorFilePath!);
+
+            var result = task.GetOutputSince();
+            result.Output.Should().BeEmpty();
+            result.Error.Should().BeEmpty();
+            result.OutputOffset.Should().Be(0);
+            result.ErrorOffset.Should().Be(0);
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void AppendError_AfterPersist_IsIgnored()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"ps-test-{Guid.NewGuid():N}");
+        try
+        {
+            var task = new PowerShellTask();
+            task.AppendError("before");
+            task.PersistOutput(dir);
+
+            task.AppendError("after");
+
+            var result = task.GetOutputSince();
+            result.Error.Should().Contain("before");
+            result.Error.Should().NotContain("after");
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void GetOutputSince_FromFile_NegativeOffset_ClampsToZero()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"ps-test-{Guid.NewGuid():N}");
+        try
+        {
+            var task = new PowerShellTask();
+            task.AppendOutput("hello");
+            task.AppendError("world");
+            task.PersistOutput(dir);
+
+            var result = task.GetOutputSince(outputOffset: -5, errorOffset: -10);
+            result.Output.Should().Contain("hello");
+            result.Error.Should().Contain("world");
+            result.OutputOffset.Should().BeGreaterThan(0);
+            result.ErrorOffset.Should().BeGreaterThan(0);
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
     public void Cts_InitiallyNotCancelled()
     {
         var task = new PowerShellTask();
