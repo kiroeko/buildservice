@@ -33,5 +33,11 @@ x86/
 *.swp
 *~
 
+## Test results & coverage
+TestResults/
+
+## Runtime output
+task-outputs/
+
 # Claude Code
 .claude/
