@@ -53,6 +53,16 @@ namespace BuilderService
             return ApiResult<PowerShellTask?>(task);
         }
 
+        [HttpGet("{id}/output")]
+        public ApiResult<PowerShellOutputResult?> GetOutput(string id, [FromQuery] int outputOffset = 0, [FromQuery] int errorOffset = 0, [FromServices] PowerShellService service = null!)
+        {
+            var task = service.GetTask(id);
+            if (task == null)
+                return new ApiResult<PowerShellOutputResult?> { Code = 404, Data = null, Message = "Task not found" };
+
+            return ApiResult<PowerShellOutputResult?>(task.GetOutputSince(outputOffset, errorOffset));
+        }
+
         [HttpGet]
         public ApiResult<List<PowerShellTask>> GetAll([FromServices] PowerShellService service)
         {

@@ -48,7 +48,8 @@ public class PowerShellTaskTests
     {
         var task = new PowerShellTask();
         task.AppendOutput("hello");
-        task.Output.Should().Be("hello" + Environment.NewLine);
+        var result = task.GetOutputSince();
+        result.Output.Should().Be("hello" + Environment.NewLine);
     }
 
     [Fact]
@@ -57,7 +58,8 @@ public class PowerShellTaskTests
         var task = new PowerShellTask();
         task.AppendOutput("line1");
         task.AppendOutput("line2");
-        task.Output.Should().Be("line1" + Environment.NewLine + "line2" + Environment.NewLine);
+        var result = task.GetOutputSince();
+        result.Output.Should().Be("line1" + Environment.NewLine + "line2" + Environment.NewLine);
     }
 
     [Fact]
@@ -65,25 +67,34 @@ public class PowerShellTaskTests
     {
         var task = new PowerShellTask();
         task.AppendError("err");
-        task.Error.Should().Be("err" + Environment.NewLine);
+        var result = task.GetOutputSince();
+        result.Error.Should().Be("err" + Environment.NewLine);
     }
 
     [Fact]
-    public void Output_SetterOverwritesPreviousValue()
+    public void GetOutputSince_WithOffset_ReturnsIncremental()
     {
         var task = new PowerShellTask();
-        task.AppendOutput("old");
-        task.Output = "new";
-        task.Output.Should().Be("new");
+        task.AppendOutput("line1");
+        task.AppendOutput("line2");
+
+        var first = task.GetOutputSince();
+        first.Output.Should().Contain("line1");
+        first.OutputOffset.Should().BeGreaterThan(0);
+
+        task.AppendOutput("line3");
+        var second = task.GetOutputSince(first.OutputOffset);
+        second.Output.Should().Contain("line3");
+        second.Output.Should().NotContain("line1");
     }
 
     [Fact]
-    public void Error_SetterOverwritesPreviousValue()
+    public void GetOutputSince_OffsetExceedsLength_ReturnsEmpty()
     {
         var task = new PowerShellTask();
-        task.AppendError("old");
-        task.Error = "new";
-        task.Error.Should().Be("new");
+        task.AppendOutput("hello");
+        var result = task.GetOutputSince(outputOffset: 99999);
+        result.Output.Should().BeEmpty();
     }
 
     [Fact]
@@ -97,8 +108,197 @@ public class PowerShellTaskTests
             task.AppendOutput($"line{i}");
         });
 
-        var lines = task.Output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        var result = task.GetOutputSince();
+        var lines = result.Output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
         lines.Should().HaveCount(count);
+    }
+
+    [Fact]
+    public void GetOutputSince_NegativeOffset_ClampsToZero()
+    {
+        var task = new PowerShellTask();
+        task.AppendOutput("hello");
+        var result = task.GetOutputSince(outputOffset: -5, errorOffset: -10);
+        result.Output.Should().Be("hello" + Environment.NewLine);
+        result.OutputOffset.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public void GetOutputSince_ReturnsStatusAndExitCode()
+    {
+        var task = new PowerShellTask();
+        task.Status = PowerShellTaskStatus.Completed;
+        task.ExitCode = 0;
+        task.AppendOutput("done");
+
+        var result = task.GetOutputSince();
+        result.Status.Should().Be(PowerShellTaskStatus.Completed);
+        result.ExitCode.Should().Be(0);
+    }
+
+    [Fact]
+    public void GetOutputSince_ErrorOffset_ReturnsIncrementalError()
+    {
+        var task = new PowerShellTask();
+        task.AppendError("err1");
+        var first = task.GetOutputSince();
+        first.Error.Should().Contain("err1");
+
+        task.AppendError("err2");
+        var second = task.GetOutputSince(errorOffset: first.ErrorOffset);
+        second.Error.Should().Contain("err2");
+        second.Error.Should().NotContain("err1");
+    }
+
+    [Fact]
+    public void PersistOutput_WritesFilesAndReleasesMemory()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"ps-test-{Guid.NewGuid():N}");
+        try
+        {
+            var task = new PowerShellTask();
+            task.AppendOutput("stdout content");
+            task.AppendError("stderr content");
+
+            var success = task.PersistOutput(dir);
+
+            success.Should().BeTrue();
+            task.OutputPersisted.Should().BeTrue();
+            task.OutputFilePath.Should().NotBeNull();
+            task.ErrorFilePath.Should().NotBeNull();
+            File.Exists(task.OutputFilePath).Should().BeTrue();
+            File.Exists(task.ErrorFilePath).Should().BeTrue();
+            File.ReadAllText(task.OutputFilePath!).Should().Contain("stdout content");
+            File.ReadAllText(task.ErrorFilePath!).Should().Contain("stderr content");
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void PersistOutput_ThenGetOutputSince_ReadsFromFile()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"ps-test-{Guid.NewGuid():N}");
+        try
+        {
+            var task = new PowerShellTask();
+            task.AppendOutput("line1");
+            task.AppendOutput("line2");
+
+            var before = task.GetOutputSince();
+            task.PersistOutput(dir);
+
+            var after = task.GetOutputSince();
+            after.Output.Should().Contain("line1");
+            after.Output.Should().Contain("line2");
+            after.OutputOffset.Should().Be(before.OutputOffset);
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void PersistOutput_ThenGetOutputSince_WithOffset_ReturnsIncremental()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"ps-test-{Guid.NewGuid():N}");
+        try
+        {
+            var task = new PowerShellTask();
+            task.AppendOutput("line1");
+            task.AppendOutput("line2");
+
+            var first = task.GetOutputSince();
+            var midOffset = first.OutputOffset / 2;
+
+            task.PersistOutput(dir);
+
+            var result = task.GetOutputSince(outputOffset: midOffset);
+            result.Output.Should().NotBeEmpty();
+            result.OutputOffset.Should().Be(first.OutputOffset);
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void PersistOutput_ThenGetOutputSince_OffsetExceedsFile_ReturnsEmpty()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"ps-test-{Guid.NewGuid():N}");
+        try
+        {
+            var task = new PowerShellTask();
+            task.AppendOutput("short");
+            task.PersistOutput(dir);
+
+            var result = task.GetOutputSince(outputOffset: 99999);
+            result.Output.Should().BeEmpty();
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void AppendOutput_AfterPersist_IsIgnored()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"ps-test-{Guid.NewGuid():N}");
+        try
+        {
+            var task = new PowerShellTask();
+            task.AppendOutput("before");
+            task.PersistOutput(dir);
+
+            task.AppendOutput("after");
+
+            var result = task.GetOutputSince();
+            result.Output.Should().Contain("before");
+            result.Output.Should().NotContain("after");
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void DeleteOutputFiles_RemovesFiles()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"ps-test-{Guid.NewGuid():N}");
+        try
+        {
+            var task = new PowerShellTask();
+            task.AppendOutput("data");
+            task.PersistOutput(dir);
+
+            var stdout = task.OutputFilePath!;
+            var stderr = task.ErrorFilePath!;
+            File.Exists(stdout).Should().BeTrue();
+            File.Exists(stderr).Should().BeTrue();
+
+            task.DeleteOutputFiles();
+
+            File.Exists(stdout).Should().BeFalse();
+            File.Exists(stderr).Should().BeFalse();
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void DeleteOutputFiles_NoFiles_DoesNotThrow()
+    {
+        var task = new PowerShellTask();
+        var act = () => task.DeleteOutputFiles();
+        act.Should().NotThrow();
     }
 
     [Fact]

@@ -32,30 +32,31 @@ pipeline {
             steps {
                 script {
                     def interval = 10
-                    def lastOutputLen = 0
-                    def lastErrorLen = 0
+                    def outputOffset = 0
+                    def errorOffset = 0
                     while (true) {
                         sleep interval
                         def resp = httpRequest(
-                            url: "${API_BASE}/${env.TASK_ID}",
+                            url: "${API_BASE}/${env.TASK_ID}/output?outputOffset=${outputOffset}&errorOffset=${errorOffset}",
                             httpMode: 'GET',
                             validResponseCodes: '200'
                         )
                         def result = readJSON text: resp.content
-                        def status = result.data?.status
-                        def output = result.data?.output ?: ''
-                        def errMsg = result.data?.error ?: ''
+                        def data = result.data
+                        def output = data?.output ?: ''
+                        def errMsg = data?.error ?: ''
 
-                        // Print incremental output
-                        if (output.length() > lastOutputLen) {
-                            echo output.substring(lastOutputLen)
-                            lastOutputLen = output.length()
+                        if (output) {
+                            echo output
                         }
-                        if (errMsg.length() > lastErrorLen) {
-                            echo "[STDERR] ${errMsg.substring(lastErrorLen)}"
-                            lastErrorLen = errMsg.length()
+                        if (errMsg) {
+                            echo "[STDERR] ${errMsg}"
                         }
 
+                        outputOffset = data?.outputOffset ?: outputOffset
+                        errorOffset = data?.errorOffset ?: errorOffset
+
+                        def status = data?.status
                         if (status == 'Completed') {
                             return
                         } else if (status == 'Failed' || status == 'TimedOut' || status == 'Cancelled') {

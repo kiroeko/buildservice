@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text;
 using System.Threading.Channels;
 
 namespace BuilderService
@@ -9,6 +10,7 @@ namespace BuilderService
         private readonly int _maxTasks;
         private readonly TimeSpan _taskExpiry;
         private readonly TimeSpan _taskTimeout;
+        private readonly string _outputDirectory;
         private readonly ConcurrentDictionary<string, PowerShellTask> _tasks = new();
         private readonly Channel<PowerShellTask> _queue = Channel.CreateUnbounded<PowerShellTask>();
 
@@ -17,6 +19,7 @@ namespace BuilderService
             _maxTasks = configuration.GetValue("PowerShellService:MaxTasks", 100);
             _taskExpiry = TimeSpan.FromMinutes(configuration.GetValue("PowerShellService:CompletedTaskRetentionMinutes", 60));
             _taskTimeout = TimeSpan.FromMinutes(configuration.GetValue("PowerShellService:TaskTimeoutMinutes", 30));
+            _outputDirectory = configuration.GetValue("PowerShellService:OutputDirectory", "task-outputs") ?? "task-outputs";
         }
 
         public bool IsFull => _tasks.Count >= _maxTasks;
@@ -74,6 +77,8 @@ namespace BuilderService
                     Arguments = $"-ExecutionPolicy Bypass -File \"{task.ScriptPath}\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     WorkingDirectory = Path.GetDirectoryName(task.ScriptPath) ?? ""
@@ -121,12 +126,13 @@ namespace BuilderService
             }
             catch (Exception ex)
             {
-                task.Error = ex.Message;
+                task.AppendError(ex.Message);
                 task.Status = PowerShellTaskStatus.Failed;
             }
             finally
             {
                 task.CompletedAt = DateTime.UtcNow;
+                task.PersistOutput(_outputDirectory);
             }
         }
 
@@ -134,11 +140,14 @@ namespace BuilderService
         {
             var now = DateTime.UtcNow;
 
-            // Remove completed tasks older than 1 hour
+            // Remove completed tasks older than retention period
             foreach (var task in _tasks.Values)
             {
                 if (task.CompletedAt.HasValue && now - task.CompletedAt.Value > _taskExpiry)
-                    _tasks.TryRemove(task.Id, out _);
+                {
+                    if (_tasks.TryRemove(task.Id, out _))
+                        task.DeleteOutputFiles();
+                }
             }
 
             // If still over limit, remove oldest completed tasks
@@ -150,7 +159,8 @@ namespace BuilderService
                     .FirstOrDefault();
 
                 if (oldest == null) break;
-                _tasks.TryRemove(oldest.Id, out _);
+                if (_tasks.TryRemove(oldest.Id, out _))
+                    oldest.DeleteOutputFiles();
             }
         }
     }

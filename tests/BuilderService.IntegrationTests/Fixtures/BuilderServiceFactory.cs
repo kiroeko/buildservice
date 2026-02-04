@@ -13,7 +13,7 @@ public class BuilderServiceFactory : WebApplicationFactory<Program>
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["PowerShellService:TaskTimeoutMinutes"] = "1",
-                ["PowerShellService:MaxTasks"] = "10",
+                ["PowerShellService:MaxTasks"] = "20",
                 ["PowerShellService:CompletedTaskRetentionMinutes"] = "1",
                 ["RateLimiting:PermitLimit"] = "1000",
                 ["RateLimiting:WindowSeconds"] = "60",

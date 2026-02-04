@@ -119,8 +119,12 @@ public class PowerShellEndpointTests : IClassFixture<BuilderServiceFactory>
         var taskId = await SubmitScript(GetFixturePath("test-output.ps1"));
         var task = await WaitForTerminalStatus(taskId, TimeSpan.FromSeconds(30));
         task.Status.Should().Be(PowerShellTaskStatus.Completed);
-        task.Output.Should().Contain("line1");
-        task.Output.Should().Contain("line2");
+
+        var outputResponse = await _client.GetFromJsonAsync<ApiResult<PowerShellOutputResult>>(
+            $"/api/powershell/{taskId}/output", JsonOptions);
+        outputResponse.Should().NotBeNull();
+        outputResponse!.Data.Output.Should().Contain("line1");
+        outputResponse.Data.Output.Should().Contain("line2");
     }
 
     [Fact]
@@ -155,6 +159,78 @@ public class PowerShellEndpointTests : IClassFixture<BuilderServiceFactory>
             "/api/powershell", JsonOptions);
         response.Should().NotBeNull();
         response!.Data.Should().Contain(t => t.Id == taskId);
+    }
+
+    // Output endpoint tests
+
+    [Fact]
+    public async Task GetOutput_NonExistentTask_Returns404()
+    {
+        var response = await _client.GetAsync("/api/powershell/nonexistent/output");
+        var result = await response.Content.ReadFromJsonAsync<ApiResult<PowerShellOutputResult>>(JsonOptions);
+        result!.Code.Should().Be(404);
+    }
+
+    [Fact]
+    public async Task GetOutput_CompletedTask_ReturnsOutputFromFile()
+    {
+        var taskId = await SubmitScript(GetFixturePath("test-output.ps1"));
+        await WaitForTerminalStatus(taskId, TimeSpan.FromSeconds(30));
+
+        var result = await _client.GetFromJsonAsync<ApiResult<PowerShellOutputResult>>(
+            $"/api/powershell/{taskId}/output", JsonOptions);
+
+        result.Should().NotBeNull();
+        result!.Data.Output.Should().Contain("line1");
+        result.Data.Output.Should().Contain("line2");
+        result.Data.Status.Should().Be(PowerShellTaskStatus.Completed);
+        result.Data.ExitCode.Should().Be(0);
+        result.Data.OutputOffset.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task GetOutput_WithFullOffset_ReturnsEmpty()
+    {
+        var taskId = await SubmitScript(GetFixturePath("test-output.ps1"));
+        await WaitForTerminalStatus(taskId, TimeSpan.FromSeconds(30));
+
+        var first = await _client.GetFromJsonAsync<ApiResult<PowerShellOutputResult>>(
+            $"/api/powershell/{taskId}/output", JsonOptions);
+
+        var second = await _client.GetFromJsonAsync<ApiResult<PowerShellOutputResult>>(
+            $"/api/powershell/{taskId}/output?outputOffset={first!.Data.OutputOffset}&errorOffset={first.Data.ErrorOffset}", JsonOptions);
+
+        second!.Data.Output.Should().BeEmpty();
+        second.Data.Error.Should().BeEmpty();
+        second.Data.OutputOffset.Should().Be(first.Data.OutputOffset);
+    }
+
+    [Fact]
+    public async Task GetOutput_WithExcessiveOffset_ReturnsEmpty()
+    {
+        var taskId = await SubmitScript(GetFixturePath("test-output.ps1"));
+        await WaitForTerminalStatus(taskId, TimeSpan.FromSeconds(30));
+
+        var result = await _client.GetFromJsonAsync<ApiResult<PowerShellOutputResult>>(
+            $"/api/powershell/{taskId}/output?outputOffset=999999", JsonOptions);
+
+        result!.Data.Output.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetTask_CompletedTask_DoesNotContainOutputFields()
+    {
+        var taskId = await SubmitScript(GetFixturePath("test-output.ps1"));
+        await WaitForTerminalStatus(taskId, TimeSpan.FromSeconds(30));
+
+        var response = await _client.GetAsync($"/api/powershell/{taskId}");
+        var json = await response.Content.ReadAsStringAsync();
+
+        json.Should().NotContain("\"output\"");
+        json.Should().NotContain("\"error\"");
+        json.Should().NotContain("\"outputFilePath\"");
+        json.Should().NotContain("\"errorFilePath\"");
+        json.Should().NotContain("\"outputPersisted\"");
     }
 
     // JSON format tests
