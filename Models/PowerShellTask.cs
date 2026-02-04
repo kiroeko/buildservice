@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace BuilderService
 {
     public enum PowerShellTaskStatus
@@ -20,9 +22,16 @@ namespace BuilderService
 
         public int? ExitCode { get; set; }
 
-        public string Output { get; set; } = string.Empty;
+        private readonly object _lock = new();
+        private readonly StringBuilder _output = new();
+        private readonly StringBuilder _error = new();
 
-        public string Error { get; set; } = string.Empty;
+        public string Output { get { lock (_lock) return _output.ToString(); } set { lock (_lock) { _output.Clear(); _output.Append(value); } } }
+
+        public string Error { get { lock (_lock) return _error.ToString(); } set { lock (_lock) { _error.Clear(); _error.Append(value); } } }
+
+        public void AppendOutput(string line) { lock (_lock) _output.AppendLine(line); }
+        public void AppendError(string line) { lock (_lock) _error.AppendLine(line); }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

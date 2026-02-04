@@ -79,13 +79,23 @@ namespace BuilderService
                     WorkingDirectory = Path.GetDirectoryName(task.ScriptPath) ?? ""
                 };
 
+                process.OutputDataReceived += (_, e) =>
+                {
+                    if (e.Data != null)
+                        task.AppendOutput(e.Data);
+                };
+                process.ErrorDataReceived += (_, e) =>
+                {
+                    if (e.Data != null)
+                        task.AppendError(e.Data);
+                };
+
                 process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
 
                 using var timeoutCts = new CancellationTokenSource(_taskTimeout);
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(task.Cts.Token, timeoutCts.Token);
-
-                var outputTask = process.StandardOutput.ReadToEndAsync(linkedCts.Token);
-                var errorTask = process.StandardError.ReadToEndAsync(linkedCts.Token);
 
                 try
                 {
@@ -96,19 +106,16 @@ namespace BuilderService
                     process.Kill(entireProcessTree: true);
                     if (task.Cts.IsCancellationRequested)
                     {
-                        task.Error = "Task was cancelled by user";
+                        task.AppendError("Task was cancelled by user");
                         task.Status = PowerShellTaskStatus.Cancelled;
                     }
                     else
                     {
-                        task.Error = $"Process timed out after {_taskTimeout.TotalMinutes} minutes and was killed";
+                        task.AppendError($"Process timed out after {_taskTimeout.TotalMinutes} minutes and was killed");
                         task.Status = PowerShellTaskStatus.TimedOut;
                     }
                     return;
                 }
-
-                task.Output = await outputTask;
-                task.Error = await errorTask;
                 task.ExitCode = process.ExitCode;
                 task.Status = process.ExitCode == 0 ? PowerShellTaskStatus.Completed : PowerShellTaskStatus.Failed;
             }
