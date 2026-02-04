@@ -6,7 +6,8 @@ namespace BuilderService
         Running,
         Completed,
         Failed,
-        TimedOut
+        TimedOut,
+        Cancelled
     }
 
     public class PowerShellTask
@@ -26,5 +27,8 @@ namespace BuilderService
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? CompletedAt { get; set; }
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public CancellationTokenSource Cts { get; } = new();
     }
 }

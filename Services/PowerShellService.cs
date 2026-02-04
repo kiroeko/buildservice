@@ -35,6 +35,18 @@ namespace BuilderService
             return task;
         }
 
+        public bool StopTask(string id)
+        {
+            if (!_tasks.TryGetValue(id, out var task))
+                return false;
+
+            if (task.Status != PowerShellTaskStatus.Running && task.Status != PowerShellTaskStatus.Pending)
+                return false;
+
+            task.Cts.Cancel();
+            return true;
+        }
+
         public List<PowerShellTask> GetAllTasks()
         {
             return _tasks.Values.OrderByDescending(t => t.CreatedAt).ToList();
@@ -69,20 +81,29 @@ namespace BuilderService
 
                 process.Start();
 
-                using var cts = new CancellationTokenSource(_taskTimeout);
+                using var timeoutCts = new CancellationTokenSource(_taskTimeout);
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(task.Cts.Token, timeoutCts.Token);
 
-                var outputTask = process.StandardOutput.ReadToEndAsync(cts.Token);
-                var errorTask = process.StandardError.ReadToEndAsync(cts.Token);
+                var outputTask = process.StandardOutput.ReadToEndAsync(linkedCts.Token);
+                var errorTask = process.StandardError.ReadToEndAsync(linkedCts.Token);
 
                 try
                 {
-                    await process.WaitForExitAsync(cts.Token);
+                    await process.WaitForExitAsync(linkedCts.Token);
                 }
                 catch (OperationCanceledException)
                 {
                     process.Kill(entireProcessTree: true);
-                    task.Error = $"Process timed out after {_taskTimeout.TotalMinutes} minutes and was killed";
-                    task.Status = PowerShellTaskStatus.TimedOut;
+                    if (task.Cts.IsCancellationRequested)
+                    {
+                        task.Error = "Task was cancelled by user";
+                        task.Status = PowerShellTaskStatus.Cancelled;
+                    }
+                    else
+                    {
+                        task.Error = $"Process timed out after {_taskTimeout.TotalMinutes} minutes and was killed";
+                        task.Status = PowerShellTaskStatus.TimedOut;
+                    }
                     return;
                 }
 

@@ -30,6 +30,19 @@ namespace BuilderService
             return ApiResult(taskId);
         }
 
+        [HttpPost("{id}/stop")]
+        public ApiResult<string> Stop(string id, [FromServices] PowerShellService service)
+        {
+            var task = service.GetTask(id);
+            if (task == null)
+                return new ApiResult<string> { Code = 404, Data = string.Empty, Message = "Task not found" };
+
+            if (!service.StopTask(id))
+                return new ApiResult<string> { Code = 400, Data = string.Empty, Message = "Task is not running" };
+
+            return ApiResult("Task stop requested");
+        }
+
         [HttpGet("{id}")]
         public ApiResult<PowerShellTask?> Get(string id, [FromServices] PowerShellService service)
         {
