@@ -15,7 +15,7 @@ namespace BuilderService
         public PowerShellService(IConfiguration configuration)
         {
             _maxTasks = configuration.GetValue("PowerShellService:MaxTasks", 100);
-            _taskExpiry = TimeSpan.FromMinutes(configuration.GetValue("PowerShellService:TaskExpiryMinutes", 60));
+            _taskExpiry = TimeSpan.FromMinutes(configuration.GetValue("PowerShellService:CompletedTaskRetentionMinutes", 60));
             _taskTimeout = TimeSpan.FromMinutes(configuration.GetValue("PowerShellService:TaskTimeoutMinutes", 30));
         }
 
