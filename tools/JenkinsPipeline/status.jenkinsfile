@@ -1,0 +1,31 @@
+pipeline {
+    agent {
+        label 'built-in'
+    }
+
+    environment {
+        API_BASE = 'http://192.168.110.112:22333/api'
+    }
+
+    stages {
+        stage('Check Service Status') {
+            steps {
+                script {
+                    def resp = httpRequest(
+                        url: "${API_BASE}/Status",
+                        httpMode: 'GET',
+                        validResponseCodes: '200'
+                    )
+                    def result = readJSON text: resp.content
+                    def isReady = result.data
+
+                    if (isReady) {
+                        echo "Service is READY"
+                    } else {
+                        error "Service is NOT ready"
+                    }
+                }
+            }
+        }
+    }
+}
