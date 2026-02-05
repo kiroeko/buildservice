@@ -78,6 +78,22 @@ Use the `outputOffset` and `errorOffset` from the previous response to fetch onl
 GET /api/powershell/{id}/output?outputOffset=120&errorOffset=0
 ```
 
+## Jenkins Integration
+
+The `tools/JenkinsPipeline/` directory contains example Jenkinsfiles for calling BuilderService from Jenkins pipelines.
+
+### Required Jenkins Plugins
+
+| Plugin | Provides | Usage |
+|--------|----------|-------|
+| [HTTP Request](https://plugins.jenkins.io/http_request/) | `httpRequest` step | Sends HTTP requests to BuilderService APIs |
+| [Pipeline Utility Steps](https://plugins.jenkins.io/pipeline-utility-steps/) | `readJSON` step | Parses JSON responses from the API |
+
+### Example Pipelines
+
+- **`status.jenkinsfile`** — Checks whether the service is ready via `GET /api/Status`.
+- **`callsync.jenkinsfile`** — Submits a PowerShell script, then polls for completion while streaming stdout/stderr output.
+
 ## Configuration
 
 `appsettings.json`:
