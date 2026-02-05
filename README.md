@@ -25,6 +25,12 @@ A Windows service built on ASP.NET Core (.NET 9) that provides REST APIs for exe
 
 This installs the required global tool (`reportgenerator`) and restores NuGet packages.
 
+## Publish
+
+```powershell
+.\publish.ps1
+```
+
 ## Run
 
 ```powershell
