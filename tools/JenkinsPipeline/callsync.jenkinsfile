@@ -107,7 +107,6 @@ Build Number: ${env.BUILD_NUMBER}
 
 错误摘要:
 ${env.ALL_ERRORS ?: '无错误信息'}
-
 完整日志: ${logUrl}
                     """,
                     to: 'your-email@example.com',
