@@ -31,6 +31,7 @@ pipeline {
         stage('Wait for Completion') {
             steps {
                 script {
+                    env.ALL_ERRORS = ''
                     def interval = 10
                     def outputOffset = 0
                     def errorOffset = 0
