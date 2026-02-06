@@ -5,6 +5,8 @@ pipeline {
 
     environment {
         API_BASE = 'http://192.168.110.112:22333/api/PowerShell'
+        ALL_ERRORS = ''
+        TASK_ID = ''
     }
 
     stages {
@@ -51,6 +53,7 @@ pipeline {
                         }
                         if (errMsg) {
                             echo "[STDERR] ${errMsg}"
+                            env.ALL_ERRORS += errMsg + '\n'
                         }
 
                         outputOffset = data?.outputOffset ?: outputOffset
@@ -64,6 +67,55 @@ pipeline {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    post {
+        failure {
+            script {
+                // 获取任务最终状态
+                def taskStatus = ''
+                def exitCode = ''
+                if (env.TASK_ID) {
+                    try {
+                        def resp = httpRequest(
+                            url: "${API_BASE}/${env.TASK_ID}",
+                            httpMode: 'GET',
+                            validResponseCodes: '200'
+                        )
+                        def result = readJSON text: resp.content
+                        taskStatus = result.data?.status ?: ''
+                        exitCode = result.data?.exitCode ?: ''
+                    } catch (Exception e) {
+                        echo "Failed to get task status: ${e.message}"
+                    }
+                }
+
+                // 构建日志链接
+                def logUrl = "${env.BUILD_URL}console"
+
+                // 发送邮件
+                emailext(
+                    subject: "Jenkins Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                    body: """
+构建失败通知
+
+Job: ${env.JOB_NAME}
+Build Number: ${env.BUILD_NUMBER}
+状态: ${currentBuild.currentResult}
+任务状态: ${taskStatus ?: '未知'}
+退出码: ${exitCode ?: '未知'}
+
+错误摘要:
+${env.ALL_ERRORS ?: '无错误信息'}
+
+完整日志: ${logUrl}
+                    """,
+                    to: 'your-email@example.com',
+                    cc: 'cc-email@example.com',
+                    mimeType: 'text/plain'
+                )
             }
         }
     }
