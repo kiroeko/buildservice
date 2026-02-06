@@ -5,8 +5,6 @@ pipeline {
 
     environment {
         API_BASE = 'http://192.168.110.112:22333/api/PowerShell'
-        ALL_ERRORS = ''
-        TASK_ID = ''
     }
 
     stages {
