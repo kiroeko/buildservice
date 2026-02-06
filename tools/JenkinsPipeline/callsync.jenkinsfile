@@ -111,7 +111,6 @@ ${env.ALL_ERRORS ?: '无错误信息'}
 完整日志: ${logUrl}
                     """,
                     to: 'your-email@example.com',
-                    cc: 'cc-email@example.com',
                     mimeType: 'text/plain'
                 )
             }
