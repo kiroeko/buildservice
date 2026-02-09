@@ -59,6 +59,8 @@ var app = builder.Build();
 
 app.UseCors();
 app.UseRateLimiter();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {

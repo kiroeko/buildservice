@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Builder Service</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">&#9881;</div>
+            <h1>Builder Service</h1>
+            <p class="subtitle">PowerShell Script Execution &amp; Task Queue Management API</p>
+        </header>
+
+        <div class="card" style="text-align: center;">
+            <a href="/swagger" class="swagger-link">
+                <span>&#128196;</span> Open API Documentation
+            </a>
+        </div>
+
+        <div class="card">
+            <h2>API Endpoints</h2>
+            <ul class="endpoints">
+                <li>
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/status</span>
+                    <span class="endpoint-desc">Health check</span>
+                </li>
+                <li>
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/api/powershell/run</span>
+                    <span class="endpoint-desc">Execute script</span>
+                </li>
+                <li>
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/powershell/{id}</span>
+                    <span class="endpoint-desc">Task details</span>
+                </li>
+                <li>
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/powershell/{id}/output</span>
+                    <span class="endpoint-desc">Task output</span>
+                </li>
+                <li>
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/api/powershell/{id}/stop</span>
+                    <span class="endpoint-desc">Stop task</span>
+                </li>
+                <li>
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/powershell</span>
+                    <span class="endpoint-desc">List all tasks</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <div class="status-badge" id="status-badge">
+                <span class="status-dot"></span>
+                <span class="status-text">Checking...</span>
+            </div>
+        </div>
+
+        <footer>
+            Builder Service v1.0 &bull; .NET 9.0
+        </footer>
+    </div>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
