@@ -1,4 +1,4 @@
-namespace BuilderService
+namespace BuildService
 {
     public class StatusService
     {

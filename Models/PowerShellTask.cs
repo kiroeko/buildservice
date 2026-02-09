@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 
-namespace BuilderService
+namespace BuildService
 {
     public enum PowerShellTaskStatus
     {

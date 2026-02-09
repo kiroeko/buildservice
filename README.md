@@ -1,4 +1,4 @@
-# BuilderService
+# BuildService
 
 A Windows service built on ASP.NET Core (.NET 9) that provides REST APIs for executing PowerShell scripts asynchronously, with task queuing, timeout control, and output streaming.
 
@@ -80,13 +80,13 @@ GET /api/powershell/{id}/output?outputOffset=120&errorOffset=0
 
 ## Jenkins Integration
 
-The `tools/JenkinsPipeline/` directory contains example Jenkinsfiles for calling BuilderService from Jenkins pipelines.
+The `tools/JenkinsPipeline/` directory contains example Jenkinsfiles for calling BuildService from Jenkins pipelines.
 
 ### Required Jenkins Plugins
 
 | Plugin | Provides | Usage |
 |--------|----------|-------|
-| [HTTP Request](https://plugins.jenkins.io/http_request/) | `httpRequest` step | Sends HTTP requests to BuilderService APIs |
+| [HTTP Request](https://plugins.jenkins.io/http_request/) | `httpRequest` step | Sends HTTP requests to BuildService APIs |
 | [Pipeline Utility Steps](https://plugins.jenkins.io/pipeline-utility-steps/) | `readJSON` step | Parses JSON responses from the API |
 
 ### Example Pipelines

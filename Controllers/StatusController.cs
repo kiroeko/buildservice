@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace BuilderService
+namespace BuildService
 {
     [Route("api/[controller]")]
     [ApiController]

@@ -1,6 +1,6 @@
-using BuilderService;
+using BuildService;
 
-namespace BuilderService.UnitTests.Controllers;
+namespace BuildService.UnitTests.Controllers;
 
 public class StatusControllerTests
 {

@@ -1,6 +1,6 @@
-using BuilderService;
+using BuildService;
 
-namespace BuilderService.UnitTests.Models;
+namespace BuildService.UnitTests.Models;
 
 public class ApiResultTests
 {

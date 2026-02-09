@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading.Channels;
 
-namespace BuilderService
+namespace BuildService
 {
     public class PowerShellService : BackgroundService
     {

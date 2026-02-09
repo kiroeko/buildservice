@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="BuilderService.IntegrationTests" />
+    <InternalsVisibleTo Include="BuildService.IntegrationTests" />
   </ItemGroup>
 
   <ItemGroup>

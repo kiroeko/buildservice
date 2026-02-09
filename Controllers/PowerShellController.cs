@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace BuilderService
+namespace BuildService
 {
     [Route("api/[controller]")]
     [ApiController]

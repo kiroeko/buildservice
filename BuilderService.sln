@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuilderService", "BuilderService.csproj", "{6C7DF4BC-9D67-3959-0751-F2AAFFA37558}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildService", "BuildService.csproj", "{6C7DF4BC-9D67-3959-0751-F2AAFFA37558}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuilderService.UnitTests", "tests\BuilderService.UnitTests\BuilderService.UnitTests.csproj", "{2A613D09-E75A-435E-BECF-B870C7288867}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildService.UnitTests", "tests\BuildService.UnitTests\BuildService.UnitTests.csproj", "{2A613D09-E75A-435E-BECF-B870C7288867}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuilderService.IntegrationTests", "tests\BuilderService.IntegrationTests\BuilderService.IntegrationTests.csproj", "{407DBAE6-45E1-4772-B1BE-BD11766AD9D7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildService.IntegrationTests", "tests\BuildService.IntegrationTests\BuildService.IntegrationTests.csproj", "{407DBAE6-45E1-4772-B1BE-BD11766AD9D7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

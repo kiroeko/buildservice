@@ -1,14 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
-using BuilderService.IntegrationTests.Fixtures;
+using BuildService.IntegrationTests.Fixtures;
 
-namespace BuilderService.IntegrationTests;
+namespace BuildService.IntegrationTests;
 
-public class StatusEndpointTests : IClassFixture<BuilderServiceFactory>
+public class StatusEndpointTests : IClassFixture<BuildServiceFactory>
 {
     private readonly HttpClient _client;
 
-    public StatusEndpointTests(BuilderServiceFactory factory)
+    public StatusEndpointTests(BuildServiceFactory factory)
     {
         _client = factory.CreateClient();
     }

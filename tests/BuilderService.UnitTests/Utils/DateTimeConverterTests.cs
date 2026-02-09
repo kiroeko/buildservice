@@ -1,7 +1,7 @@
 using System.Text.Json;
-using BuilderService;
+using BuildService;
 
-namespace BuilderService.UnitTests.Utils;
+namespace BuildService.UnitTests.Utils;
 
 public class DateTimeConverterTests
 {

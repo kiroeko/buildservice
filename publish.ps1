@@ -1,1 +1,1 @@
-dotnet publish BuilderService.csproj -r win-x64 -c Release --self-contained /p:PublishSingleFile=true
+dotnet publish BuildService.csproj -r win-x64 -c Release --self-contained /p:PublishSingleFile=true

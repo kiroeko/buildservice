@@ -1,6 +1,6 @@
-using BuilderService;
+using BuildService;
 
-namespace BuilderService.UnitTests.Services;
+namespace BuildService.UnitTests.Services;
 
 public class PowerShellServiceSubmitTests
 {

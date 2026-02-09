@@ -2,12 +2,12 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using BuilderService;
-using BuilderService.IntegrationTests.Fixtures;
+using BuildService;
+using BuildService.IntegrationTests.Fixtures;
 
-namespace BuilderService.IntegrationTests;
+namespace BuildService.IntegrationTests;
 
-public class PowerShellEndpointTests : IClassFixture<BuilderServiceFactory>
+public class PowerShellEndpointTests : IClassFixture<BuildServiceFactory>
 {
     private readonly HttpClient _client;
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -16,7 +16,7 @@ public class PowerShellEndpointTests : IClassFixture<BuilderServiceFactory>
         Converters = { new JsonStringEnumConverter(), new DateTimeConverter() }
     };
 
-    public PowerShellEndpointTests(BuilderServiceFactory factory)
+    public PowerShellEndpointTests(BuildServiceFactory factory)
     {
         _client = factory.CreateClient();
     }

@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi.Models;
-using BuilderService;
+using BuildService;
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -1,7 +1,7 @@
 using System.Net;
-using BuilderService.IntegrationTests.Fixtures;
+using BuildService.IntegrationTests.Fixtures;
 
-namespace BuilderService.IntegrationTests;
+namespace BuildService.IntegrationTests;
 
 public class RateLimitingTests : IClassFixture<RateLimitedFactory>
 {

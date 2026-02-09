@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== BuilderService Dev Setup ===" -ForegroundColor Cyan
+Write-Host "=== BuildService Dev Setup ===" -ForegroundColor Cyan
 
 # .NET global tools
 Write-Host "`nInstalling .NET global tools..." -ForegroundColor Yellow

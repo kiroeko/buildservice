@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BuilderService.csproj" />
+    <ProjectReference Include="..\..\BuildService.csproj" />
   </ItemGroup>
 
   <ItemGroup>
