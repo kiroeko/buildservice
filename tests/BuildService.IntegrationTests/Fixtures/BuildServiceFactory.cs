@@ -36,3 +36,21 @@ public class RateLimitedFactory : WebApplicationFactory<Program>
         });
     }
 }
+
+public class ShortTimeoutFactory : WebApplicationFactory<Program>
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.ConfigureAppConfiguration((context, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["PowerShellService:TaskTimeoutMinutes"] = "0.05",
+                ["PowerShellService:MaxTasks"] = "20",
+                ["PowerShellService:CompletedTaskRetentionMinutes"] = "0.01",
+                ["RateLimiting:PermitLimit"] = "1000",
+                ["RateLimiting:WindowSeconds"] = "60",
+            });
+        });
+    }
+}

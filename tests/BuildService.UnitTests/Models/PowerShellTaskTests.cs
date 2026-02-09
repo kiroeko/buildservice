@@ -98,6 +98,15 @@ public class PowerShellTaskTests
     }
 
     [Fact]
+    public void GetOutputSince_ErrorOffsetExceedsLength_ReturnsEmpty()
+    {
+        var task = new PowerShellTask();
+        task.AppendError("err");
+        var result = task.GetOutputSince(errorOffset: 99999);
+        result.Error.Should().BeEmpty();
+    }
+
+    [Fact]
     public void AppendOutput_ConcurrentCalls_DoesNotCorruptData()
     {
         var task = new PowerShellTask();
@@ -404,5 +413,30 @@ public class PowerShellTaskTests
         var task = new PowerShellTask();
         task.Cts.Cancel();
         task.Cts.IsCancellationRequested.Should().BeTrue();
+    }
+
+    [Fact]
+    public void PersistOutput_CalledTwice_HandlesNullStringBuilders()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"ps-test-{Guid.NewGuid():N}");
+        try
+        {
+            var task = new PowerShellTask();
+            task.AppendOutput("data");
+            task.AppendError("err");
+            task.PersistOutput(dir);
+
+            // Second call: _output and _error are null, hits ?? branches
+            var success = task.PersistOutput(dir);
+            success.Should().BeTrue();
+
+            // Files should still exist with empty content from second persist
+            File.Exists(task.OutputFilePath).Should().BeTrue();
+            File.Exists(task.ErrorFilePath).Should().BeTrue();
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
     }
 }

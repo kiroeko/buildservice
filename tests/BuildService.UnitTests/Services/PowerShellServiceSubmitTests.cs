@@ -114,4 +114,45 @@ public class PowerShellServiceSubmitTests
         var task = service.GetTask(id);
         task!.Cts.IsCancellationRequested.Should().BeTrue();
     }
+
+    [Theory]
+    [InlineData(PowerShellTaskStatus.Completed)]
+    [InlineData(PowerShellTaskStatus.Failed)]
+    [InlineData(PowerShellTaskStatus.TimedOut)]
+    [InlineData(PowerShellTaskStatus.Cancelled)]
+    public void StopTask_TerminalStatus_ReturnsFalse(PowerShellTaskStatus status)
+    {
+        var service = CreateService();
+        var id = service.Submit("test.ps1");
+        var task = service.GetTask(id)!;
+        task.Status = status;
+        service.StopTask(id).Should().BeFalse();
+    }
+
+    [Fact]
+    public void StopTask_RunningTask_ReturnsTrue()
+    {
+        var service = CreateService();
+        var id = service.Submit("test.ps1");
+        var task = service.GetTask(id)!;
+        task.Status = PowerShellTaskStatus.Running;
+        service.StopTask(id).Should().BeTrue();
+        task.Cts.IsCancellationRequested.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Constructor_NullOutputDirectory_UsesDefault()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["PowerShellService:MaxTasks"] = "100",
+                ["PowerShellService:CompletedTaskRetentionMinutes"] = "60",
+                ["PowerShellService:TaskTimeoutMinutes"] = "30",
+                ["PowerShellService:OutputDirectory"] = null,
+            })
+            .Build();
+        var service = new PowerShellService(config);
+        service.Should().NotBeNull();
+    }
 }

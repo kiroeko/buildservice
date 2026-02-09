@@ -118,4 +118,58 @@ public class PowerShellControllerValidationTests
         result.Code.Should().Be(200);
         result.Data.Should().HaveCount(2);
     }
+
+    [Fact]
+    public void Stop_CompletedTask_Returns400()
+    {
+        var id = _service.Submit("test.ps1");
+        var task = _service.GetTask(id)!;
+        task.Status = PowerShellTaskStatus.Completed;
+        var result = _controller.Stop(id, _service);
+        result.Code.Should().Be(400);
+        result.Message.Should().Contain("not running");
+    }
+
+    [Fact]
+    public void GetOutput_NonExistentTask_Returns404()
+    {
+        var result = _controller.GetOutput("nonexistent", service: _service);
+        result.Code.Should().Be(404);
+    }
+
+    [Fact]
+    public void GetOutput_ExistingTask_Returns200()
+    {
+        var id = _service.Submit("test.ps1");
+        var task = _service.GetTask(id)!;
+        task.AppendOutput("hello");
+        var result = _controller.GetOutput(id, service: _service);
+        result.Code.Should().Be(200);
+        result.Data.Should().NotBeNull();
+        result.Data!.Output.Should().Contain("hello");
+    }
+
+    [Fact]
+    public void Run_QueueFull_Returns429_ViaController()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"ps-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var scriptPath = Path.Combine(tempDir, "dummy.ps1");
+        File.WriteAllText(scriptPath, "exit 0");
+        try
+        {
+            _service.Submit("a.ps1");
+            _service.Submit("b.ps1");
+
+            var result = _controller.Run(
+                new PowerShellRunRequest { ScriptPath = scriptPath },
+                _service);
+            result.Code.Should().Be(429);
+            result.Message.Should().Contain("full");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
 }

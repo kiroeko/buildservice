@@ -33,4 +33,15 @@ public class RateLimitingTests : IClassFixture<RateLimitedFactory>
             response.StatusCode.Should().Be(HttpStatusCode.OK);
         }
     }
+
+    [Fact]
+    public async Task SwaggerEndpoint_IsExemptFromRateLimit()
+    {
+        // PermitLimit is 2, but swagger path is excluded from rate limiting
+        for (int i = 0; i < 5; i++)
+        {
+            var response = await _client.GetAsync("/swagger/v1/swagger.json");
+            response.StatusCode.Should().NotBe(HttpStatusCode.TooManyRequests);
+        }
+    }
 }
