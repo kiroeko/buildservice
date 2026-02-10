@@ -15,7 +15,7 @@ pipeline {
                         url: "${API_BASE}/run",
                         httpMode: 'POST',
                         contentType: 'APPLICATION_JSON',
-                        requestBody: '{"scriptPath":"C:\\\\tools\\\\gitsync\\\\sync\\\\sync.ps1"}',
+                        requestBody: '{"scriptPath":"C:\\\\tools\\\\test\\\\mailtest.ps1"}',
                         validResponseCodes: '200'
                     )
                     def json = readJSON text: response.content
@@ -71,6 +71,40 @@ pipeline {
     }
 
     post {
+        success {
+            script {
+                def taskStatus = ''
+                def exitCode = ''
+                if (env.TASK_ID) {
+                    try {
+                        def resp = httpRequest(
+                            url: "${API_BASE}/${env.TASK_ID}",
+                            httpMode: 'GET',
+                            validResponseCodes: '200'
+                        )
+                        def result = readJSON text: resp.content
+                        taskStatus = result.data?.status ?: ''
+                        exitCode = result.data?.exitCode?.toString() ?: ''
+                    } catch (Exception e) {
+                        echo "Failed to get task status: ${e.message}"
+                    }
+                }
+
+                build job: 'Notify Email',
+                      wait: false,
+                      parameters: [
+                          string(name: 'NOTIFY_SUBJECT', value: "Jenkins Build Succeeded: ${env.JOB_NAME} #${env.BUILD_NUMBER}"),
+                          string(name: 'NOTIFY_JOB_NAME', value: env.JOB_NAME),
+                          string(name: 'NOTIFY_BUILD_NUMBER', value: env.BUILD_NUMBER),
+                          string(name: 'NOTIFY_BUILD_RESULT', value: currentBuild.currentResult),
+                          string(name: 'NOTIFY_TASK_STATUS', value: taskStatus ?: '未知'),
+                          string(name: 'NOTIFY_EXIT_CODE', value: exitCode ?: '未知'),
+                          string(name: 'NOTIFY_ERRORS', value: ''),
+                          string(name: 'NOTIFY_LOG_URL', value: "${env.BUILD_URL}console"),
+                          string(name: 'NOTIFY_RECIPIENTS', value: 'yuxuan.tian@hawksoft3d.com')
+                      ]
+            }
+        }
         failure {
             script {
                 // 获取任务最终状态
@@ -92,7 +126,7 @@ pipeline {
                 }
 
                 // 触发邮件通知流水线
-                build job: 'notify-email',
+                build job: 'Notify Email',
                       wait: false,
                       parameters: [
                           string(name: 'NOTIFY_SUBJECT', value: "Jenkins Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}"),
@@ -103,7 +137,7 @@ pipeline {
                           string(name: 'NOTIFY_EXIT_CODE', value: exitCode ?: '未知'),
                           string(name: 'NOTIFY_ERRORS', value: env.ALL_ERRORS ?: ''),
                           string(name: 'NOTIFY_LOG_URL', value: "${env.BUILD_URL}console"),
-                          string(name: 'NOTIFY_RECIPIENTS', value: 'your-email@example.com')
+                          string(name: 'NOTIFY_RECIPIENTS', value: 'yuxuan.tian@hawksoft3d.com')
                       ]
             }
         }
